@@ -1,0 +1,53 @@
+@media (max-width: 760px) {
+  .topbar {
+    top: env(safe-area-inset-top);
+  }
+
+  .main-area {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-bottom-nav {
+    height: calc(62px + env(safe-area-inset-bottom));
+    padding: 5px 5px max(8px, env(safe-area-inset-bottom));
+  }
+
+  .mobile-nav-item {
+    min-height: 48px;
+    font-size: 10px;
+  }
+
+  .mobile-menu-trigger {
+    min-height: 40px;
+    min-width: 40px;
+  }
+
+  .sidebar-scrim {
+    touch-action: none;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  .button,
+  .icon-button {
+    min-height: 44px;
+  }
+
+  .button-sm {
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 400px) {
+  .main-area {
+    padding-inline: 14px;
+  }
+
+  .topbar {
+    padding-inline: 10px;
+  }
+}
