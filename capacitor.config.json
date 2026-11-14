@@ -4,5 +4,15 @@
   "webDir": "dist",
   "android": {
     "allowMixedContent": false
+  },
+  "plugins": {
+    "FirebaseAuthentication": {
+      "providers": ["google.com"]
+    },
+    "StatusBar": {
+      "overlaysWebView": false,
+      "backgroundColor": "#f7f8fc",
+      "style": "LIGHT"
+    }
   }
 }

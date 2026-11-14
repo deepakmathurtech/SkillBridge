@@ -21,7 +21,20 @@ npm install
 npm run dev
 ```
 
-The Vite app runs at `http://localhost:5173`. Set `VITE_API_URL` if the API is hosted somewhere other than `http://localhost:8080/api`.
+The Vite app runs at `http://localhost:5173`. Standard web and Android modes use Firebase Authentication and Cloud Firestore for registration, sign-in, password resets, learner profiles, skill discovery, exchange requests, and live conversations. They also include learning goals and progress, session proposals and responses, a monthly calendar, profile completion, and public safety and privacy information. The existing Spring API flows remain in the Windows desktop app and faculty demo mode.
+
+Before using Firebase web mode, open the `skillbridge-fba36` project in the Firebase console:
+
+1. In **Authentication > Sign-in method**, enable **Email/Password** and **Google**. Set a support email for the Google provider when prompted.
+2. In **Firestore Database**, create a database and choose its location.
+3. Open **Firestore Database > Rules**, replace the starter rules with the contents of [`firestore.rules`](firestore.rules), and publish them. These rules restrict profile edits and learning goals to their owner, exchange requests to their participants, and conversations and sessions to their participants. The rules also allow only the other conversation participant to mark an incoming message as read; deploy the updated rules for read receipts to work.
+4. In **Authentication > Settings > Authorized domains**, ensure `localhost` and your deployed web domain are listed.
+
+The Firebase web configuration in `src/firebase.js` is a client identifier, not an administrative secret. Keep Firebase security rules enabled and never put service-account credentials in the web app. For local development, start the frontend with `npm run dev`; set `VITE_AUTH_MODE=api` in a local `.env.local` file to opt back into the legacy Spring API web experience. `npm run dev:demo` continues to use the isolated Spring demo flow.
+
+To exercise Firebase flows without changing production data, run the Auth and Firestore emulators from the project root and start Vite with `VITE_USE_FIREBASE_EMULATORS=true npm run dev`. The emulator option is off by default; local emulator accounts and records are separate from the deployed Firebase project.
+
+Set `VITE_API_URL` if the Spring API is hosted somewhere other than `http://localhost:8080/api`.
 
 ## Install the Windows desktop app
 
@@ -40,7 +53,7 @@ The installer is written to `release\SkillBridge-Setup-1.0.2.exe`. It contains t
 
 ## Build the Android app
 
-SkillBridge includes an Android app built with Capacitor. It uses the same screens, accounts, and backend as the web client. Install Android Studio with the Android SDK and an Android emulator or device, then:
+SkillBridge includes an Android app built with Capacitor. It uses the Firebase web experience, so sign-up, profiles, exchanges, messaging, learning goals, and sessions do not require a separate Spring API server. For native Google sign-in, register an Android app with package name `com.skillbridge.app` in Firebase, add the debug/release signing SHA fingerprints in Firebase project settings, enable Google in Authentication, and place the downloaded `google-services.json` at `android\app\google-services.json`. The Android Google flow uses the native account picker and returns to the app without a browser session-state redirect. Email/password auth remains available without the native Google configuration. Configure and publish Firestore rules above before using the app. Install Android Studio with the Android SDK and an Android emulator or device, then:
 
 ```powershell
 npm install
@@ -48,18 +61,18 @@ npm run build:android
 npm run android
 ```
 
-In Android Studio, wait for Gradle sync, select an emulator or connected device, and press **Run**. To create an APK, choose **Build > Build Bundle(s) / APK(s) > Build APK(s)**. Java 21 is required. In PowerShell, select your installed JDK before building from the command line:
+In Android Studio, wait for Gradle sync, select an emulator or connected device, and press **Run**. To create an APK, choose **Build > Build Bundle(s) / APK(s) > Build APK(s)**. Java 21 is required. In PowerShell, set `JAVA_HOME` to your JDK 21 installation before building from the command line:
 
 ```powershell
-$env:JAVA_HOME = "$env:LOCALAPPDATA\Programs\Microsoft\jdk-21.0.13.0.2+1"
+$env:JAVA_HOME = "C:\path\to\jdk-21"
 $env:Path = "$env:JAVA_HOME\bin;$env:Path"
 cd .\android
 .\gradlew.bat assembleDebug
 ```
 
-The Android SDK and Java 21 were installed for this Windows user. Android Studio is optional for building from PowerShell; install it if you want to run the app in its emulator or use the visual Android project editor.
+Android Studio is optional for building from PowerShell; install it if you want to run the app in its emulator or use the visual Android project editor.
 
-The debug APK is written to `android\app\build\outputs\apk\debug\app-debug.apk`. The Android emulator connects to a backend running on the same computer at `http://10.0.2.2:8080/api`. The API allows the app's local Capacitor origins by default. For a physical device or a deployed build, set `VITE_API_URL` to the backend's reachable HTTPS URL before `npm run build:android`; do not ship a build pointed at localhost. Local HTTP access is restricted to the Android emulator host.
+The debug APK is written to `android\app\build\outputs\apk\debug\app-debug.apk`. It is labeled **SkillBridge** (version 1.3.3), has a centered launcher icon and animated branded loading screens, keeps Firebase authentication persisted across app restarts, restores the signed-in workspace before the profile finishes loading, and provides a boot recovery prompt if the web app fails to mount. Camera and microphone permissions are requested by Android only when a call first uses them; broad storage permission is not required for calls. Accepted sessions can create or join an embedded Jitsi call. If moderator sign-in is blocked inside the app, use **Open in browser** to join the same room in the system browser; keep that browser call open for the meeting. The public `meet.jit.si` service may require a moderator to authenticate before the room starts, and app configuration cannot bypass that hosted-service policy. Call rooms are random, but anyone with the room link may be able to join, so share it privately. Learners can submit teaching-verification requests with qualifications and an optional HTTPS evidence link. These requests remain private and pending until an administrator review process is configured; there is no admin panel yet. The evidence link is stored in Firestore, not uploaded to Firebase Storage. Deploy the updated `firestore.rules` from the Firebase Console for these features. Signing out clears both web and native sessions and returns to the sign-in screen. Native apps do not register the web app’s service worker, avoiding stale cached app shells after an update. The debug APK is for testing; use a signed release build before publishing it.
 
 On Windows, keep Android build files outside OneDrive if Capacitor reports `EPERM` while syncing generated Android assets; OneDrive Files On-Demand can prevent the native build from replacing generated files.
 

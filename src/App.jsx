@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import {
   ArrowLeft, ArrowRight, Bell, BookOpen, CalendarDays, Check, ChevronDown,
   CircleHelp, Compass, GraduationCap, Heart, Home, LogOut, Menu, MessageCircle,
@@ -24,6 +24,8 @@ const links = [
   { to: '/app/notifications', label: 'Notifications', icon: Bell },
   { to: '/app/doubts', label: 'AI doubt solver', icon: Sparkles },
 ];
+
+const FirebaseExperience = lazy(() => import('./FirebaseExperience'));
 
 function Brand({ light = false }) {
   return <Link to="/" className={`brand ${light ? 'brand-light' : ''}`}><span className="brand-mark"><BookOpen size={18} /></span><span>skillbridge<span className="brand-period">.</span></span></Link>;
@@ -78,6 +80,9 @@ function AuthProvider({ children }) {
 }
 
 function App() {
+  if (!window.skillbridgeDesktop && import.meta.env.MODE !== 'demo' && import.meta.env.VITE_AUTH_MODE !== 'api') {
+    return <Suspense fallback={<div className="page-loader"><span className="loader" />Starting SkillBridge…</div>}><FirebaseExperience /></Suspense>;
+  }
   return <AuthProvider>{(auth) => <Application auth={auth} />}</AuthProvider>;
 }
 
