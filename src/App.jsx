@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import {
   ArrowLeft, ArrowRight, Bell, BookOpen, CalendarDays, Check, ChevronDown,
   CircleHelp, Compass, GraduationCap, Heart, Home, LogOut, Menu, MessageCircle,
@@ -43,10 +43,32 @@ function PolicyPage({ kind }) {
 function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(Boolean(getToken()));
-  useEffect(() => {
-    if (!getToken()) return;
-    api('/auth/me').then(setUser).catch(() => clearToken()).finally(() => setLoading(false));
+  const [restoreError, setRestoreError] = useState('');
+  const restoreSession = useCallback(async () => {
+    if (!getToken()) {
+      setLoading(false);
+      return false;
+    }
+    setLoading(true);
+    setRestoreError('');
+    try {
+      setUser(await api('/auth/me'));
+      return true;
+    } catch (error) {
+      if (error.status === 401) {
+        clearToken();
+        setUser(null);
+      } else {
+        setRestoreError(error.message);
+      }
+      return false;
+    } finally {
+      setLoading(false);
+    }
   }, []);
+  useEffect(() => {
+    if (getToken()) void restoreSession();
+  }, [restoreSession]);
   const login = async (email, password) => {
     return api('/auth/login', { method: 'POST', body: { email: email.trim(), password } });
   };
@@ -75,8 +97,28 @@ function AuthProvider({ children }) {
     setUser(result.user);
     return { verificationRequired: false };
   };
-  const logout = () => { clearToken(); setUser(null); };
-  return children({ user, loading, login, register, demoLogin, logout, setUser });
+  const logout = () => { clearToken(); setUser(null); setRestoreError(''); };
+  return children({ user, loading, restoreError, retrySession: restoreSession, login, register, demoLogin, logout, setUser });
+}
+
+function SessionRecovery({ auth }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const retry = async () => {
+    if (await auth.retrySession()) navigate(location.pathname, { replace: true });
+  };
+  return <main className="app-error-shell">
+    <section className="app-error-card">
+      <span className="brand-mark">S</span>
+      <h1>We couldn’t reconnect your learning space</h1>
+      <p>Your saved sign-in is still on this device. Check your connection, then try again.</p>
+      <div className="form-error" role="alert">{auth.restoreError}</div>
+      <div className="session-recovery-actions">
+        <button className="button button-primary" onClick={retry}>Try again</button>
+        <button className="button button-outline" onClick={() => { auth.logout(); navigate('/login', { replace: true }); }}>Sign in instead</button>
+      </div>
+    </section>
+  </main>;
 }
 
 function App() {
@@ -108,6 +150,7 @@ function Application({ auth }) {
     return <DesktopEmailSetup onSaved={setDesktopStatus} />;
   }
   if (auth.loading) return <div className="page-loader"><span className="loader" />Getting your learning space ready…</div>;
+  if (auth.restoreError) return <SessionRecovery auth={auth} />;
 
   const submitAuth = async (values, kind) => {
     setBusy(true); setNotice('');

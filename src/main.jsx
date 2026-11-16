@@ -71,6 +71,27 @@ function AppBootMarker() {
   return null;
 }
 
+function NetworkStatus() {
+  const [online, setOnline] = React.useState(() => navigator.onLine);
+
+  React.useEffect(() => {
+    const handleOnline = () => setOnline(true);
+    const handleOffline = () => setOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  if (online) return null;
+  return <div className="network-status" role="status" aria-live="polite">
+    <span className="network-status-dot" />
+    <span>You’re offline. Changes may not save until you reconnect.</span>
+  </div>;
+}
+
 function StartupRecovery() {
   const [timedOut, setTimedOut] = React.useState(false);
 
@@ -101,6 +122,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <App />
             </React.Suspense>
             <StartupSplash />
+            <NetworkStatus />
           </>
         </BrowserRouter>
       </AppErrorBoundary>

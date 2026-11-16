@@ -48,7 +48,9 @@ export async function api(path, options = {}) {
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
-    throw new Error(payload?.message || payload?.detail || payload?.title || `Request failed (${response.status}). Please try again.`);
+    const error = new Error(payload?.message || payload?.detail || payload?.title || `Request failed (${response.status}). Please try again.`);
+    error.status = response.status;
+    throw error;
   }
   if (response.status === 204) return null;
   return response.json();

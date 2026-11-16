@@ -570,6 +570,23 @@
     padding-inline: 9px;
   }
 
+  .topbar-actions {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .topbar-search {
+    width: 38px;
+    min-width: 38px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .topbar-search span,
+  .topbar-search kbd {
+    display: none;
+  }
+
   .mobile-nav-item {
     font-size: 9px;
   }
